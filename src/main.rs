@@ -64,6 +64,7 @@ impl CPU {
                 )
             );
         }
+        print!("cpu.regs dump:");
         println!("{}", output);
     }
 
@@ -126,7 +127,7 @@ fn main() -> io::Result<()> {
 
         // 2. Add 4 to the program counter
         cpu.pc += 4;
-        print!("{}", cpu.pc);
+        println!("cpu.pc dump: {} => {:#x}", cpu.pc, inst);
 
         // 3. Decode
 
