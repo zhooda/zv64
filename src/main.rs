@@ -1,5 +1,10 @@
 #![allow(dead_code)]
 
+use std::env;
+use std::fs::File;
+use std::io;
+use std::io::prelude::*;
+
 /// Default memory size (128MiB)
 pub const MEMORY_SIZE: u64 = 1024 * 1024 * 128;
 
@@ -71,8 +76,65 @@ impl CPU {
             | ((self.memory[idx + 2] as u32) << 16)
             | ((self.memory[idx + 3] as u32) << 24);
     }
+
+    /// Execute an instruction after decoding
+    fn execute(&mut self, inst: u32) {
+        let opcode = inst & 0x0000007f;
+        let rd =  ((inst & 0x00000f80) >> 7) as usize;
+        let rs1 = ((inst & 0x000f8000) >> 15) as usize;
+        let rs2 = ((inst & 0x01f00000) >> 20) as usize;
+
+        // Emulate that register x0 is hardwired with all bits equal to 0
+        self.regs[0] = 0;
+
+        match opcode {
+            0x13 => {
+                // addi
+                let imm = ((inst & 0xfff00000) as i32 as i64 >> 20) as u64;
+                self.regs[rd] = self.regs[rs1].wrapping_add(imm);
+            }
+            0x33 => {
+                // add
+                self.regs[rd] = self.regs[rs1].wrapping_add(self.regs[rs2])
+            }
+            _ => {
+                dbg!(format!("not implemented yet: opcode {:#x}", opcode));
+            }
+        }
+    }
 }
 
-fn main() {
-    println!("zv64");
+fn main() -> io::Result<()> {
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() != 2 {
+        panic!("Usage: zv64 <filename>");
+    }
+    let mut file = File::open(&args[1])?;
+    let mut binary = Vec::new();
+    file.read_to_end(&mut binary)?;
+
+    // Create an instance of CPU
+    let mut cpu = CPU::new(binary);
+
+    // Dump empty registers
+    cpu.dump_registers();
+
+    while cpu.pc < cpu.memory.len() as u64 {
+        // 1. Fetch instruction
+        let inst = cpu.fetch();
+
+        // 2. Add 4 to the program counter
+        cpu.pc += 4;
+        print!("{}", cpu.pc);
+
+        // 3. Decode
+
+        // 4. Execute
+        cpu.execute(inst);
+    }
+    cpu.dump_registers();
+
+    // Exit with unix exit code 0
+    Ok(())
 }
