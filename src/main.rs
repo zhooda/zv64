@@ -119,7 +119,7 @@ fn main() -> io::Result<()> {
     let mut cpu = CPU::new(binary);
 
     // Dump empty registers
-    // cpu.dump_registers();
+    cpu.dump_registers();
 
     while cpu.pc < cpu.memory.len() as u64 {
         // 1. Fetch instruction
@@ -135,7 +135,6 @@ fn main() -> io::Result<()> {
         cpu.execute(inst);
     }
     cpu.dump_registers();
-    println!("\nx31 (rd) = {} ({:#x})\n", cpu.regs[31], cpu.regs[31]);
 
     // Exit with unix exit code 0
     Ok(())
